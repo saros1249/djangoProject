@@ -1,12 +1,16 @@
 import json
 
+from django.contrib.auth.models import User
+from django.core.paginator import Paginator
 from django.http import JsonResponse
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 
+from djangoProject import settings
 from vacancies.models import Vacancy, Skill
+from vacancies.serealizers import VacancyListSerializer, VacancyDetailSerializer, VacancyCreateSerializer
 
 
 class SkillsListView(ListView):
@@ -23,6 +27,7 @@ class SkillsListView(ListView):
                 "id": skill.id,
                 "name": skill.name
             })
+
         return JsonResponse(response, safe=False)
 
 
@@ -95,12 +100,20 @@ class VacanciesListView(ListView):
         if search_text:
             self.object_list = self.object_list.filter(text=search_text)
 
-        response = []
-        for vacancy in self.object_list:
-            response.append({
-                "id": vacancy.id,
-                "text": vacancy.text
-            })
+        self.object_list = self.object_list.select_related("user").prefetch_related("skills").order_by("text")
+
+        paginator = Paginator(self.object_list, settings.TOTAL_ON_PAGE)
+        page_number = request.GET.get("page")
+        page_object = paginator.get_page(page_number)
+
+        list(map(lambda x: setattr(x, "username", x.user.username if x.user else None), page_object))
+
+        response = {
+            "items": VacancyListSerializer(page_object, many=True).data,
+            "num_pages": paginator.num_pages,
+            "total": paginator.count
+        }
+
         return JsonResponse(response, safe=False)
 
 
@@ -110,10 +123,8 @@ class VacancyDetailView(DetailView):
     def get(self, request, *args, **kwargs):
         vacancy = self.get_object()
 
-        return JsonResponse({
-            "id": vacancy.id,
-            "text": vacancy.text
-        })
+        return JsonResponse(VacancyDetailSerializer(vacancy).data)
+
 
 
 @method_decorator(csrf_exempt, name="dispatch")
@@ -122,21 +133,15 @@ class VacancyCreateView(CreateView):
     fields = ["user", "slug", "text", "status", "created", "skills"]
 
     def post(self, request, *args, **kwargs):
-        data = json.loads(request.body)
+        data = VacancyCreateSerializer(data=json.loads(request.body))
 
-        vacancy = Vacancy.objects.create(
-            user_id=data["user_id"],
-            slug=data["slug"],
-            text=data["text"],
-            status=data["status"]
-        )
+        if data.is_valid():
+            data.save()
+        else:
+            return JsonResponse(data.errors)
 
-        return JsonResponse({
-            "id": vacancy.id,
-            "slug": vacancy.slug,
-            "text": vacancy.text,
-            "status": vacancy.status
-        })
+
+        return JsonResponse(data.data)
 
 
 @method_decorator(csrf_exempt, name="dispatch")

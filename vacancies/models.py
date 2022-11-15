@@ -12,8 +12,8 @@ class Skill(models.Model):
     def __str__(self):
         return self.name
 
-class Vacancy(models.Model):
 
+class Vacancy(models.Model):
     STATUS = [
         ("draft", "Черновик"),
         ("open", "Открыта"),
