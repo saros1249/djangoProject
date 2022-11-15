@@ -7,6 +7,7 @@ from django.shortcuts import render, get_object_or_404
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
+from rest_framework.generics import ListAPIView
 
 from djangoProject import settings
 from vacancies.models import Vacancy, Skill
@@ -90,31 +91,33 @@ class SkillDeleteView(DeleteView):
         return JsonResponse({"status": "deleted successfully"}, status=200)
 
 
-class VacanciesListView(ListView):
-    model = Vacancy
+class VacanciesListView(ListAPIView):
+    queryset = Vacancy.objects.all()
+    serializer_class = VacancyListSerializer
 
-    def get(self, request, *args, **kwargs):
-        super().get(request, *args, **kwargs)
 
-        search_text = request.GET.get("text", None)
-        if search_text:
-            self.object_list = self.object_list.filter(text=search_text)
+    # def get(self, request, *args, **kwargs):
+    #     super().get(request, *args, **kwargs)
+    #
+    #     search_text = request.GET.get("text", None)
+    #     if search_text:
+    #         self.object_list = self.object_list.filter(text=search_text)
+    #
+    #     self.object_list = self.object_list.select_related("user").prefetch_related("skills").order_by("text")
+    #
+    #     paginator = Paginator(self.object_list, settings.TOTAL_ON_PAGE)
+    #     page_number = request.GET.get("page")
+    #     page_object = paginator.get_page(page_number)
+    #
+    #     list(map(lambda x: setattr(x, "username", x.user.username if x.user else None), page_object))
+    #
+    #     response = {
+    #         "items": VacancyListSerializer(page_object, many=True).data,
+    #         "num_pages": paginator.num_pages,
+    #         "total": paginator.count
+    #     }
 
-        self.object_list = self.object_list.select_related("user").prefetch_related("skills").order_by("text")
-
-        paginator = Paginator(self.object_list, settings.TOTAL_ON_PAGE)
-        page_number = request.GET.get("page")
-        page_object = paginator.get_page(page_number)
-
-        list(map(lambda x: setattr(x, "username", x.user.username if x.user else None), page_object))
-
-        response = {
-            "items": VacancyListSerializer(page_object, many=True).data,
-            "num_pages": paginator.num_pages,
-            "total": paginator.count
-        }
-
-        return JsonResponse(response, safe=False)
+    #    return JsonResponse(response, safe=False)
 
 
 class VacancyDetailView(DetailView):
