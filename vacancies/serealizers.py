@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from vacancies.models import Vacancy
+from vacancies.models import Vacancy, Skill
 
 
 class VacancyListSerializer(serializers.ModelSerializer):
@@ -27,9 +27,64 @@ class VacancyDetailSerializer(serializers.ModelSerializer):
         model = Vacancy
         fields = "__all__"
 
-class VacancyCreateSerializer(serializers.ModelSerializer):
-    class Meta:
-        id = serializers.IntegerField(required=False)
 
+class VacancyCreateSerializer(serializers.ModelSerializer):
+    skills = serializers.SlugRelatedField(
+        required=False,
+        many=True,
+        queryset=Skill.objects.all(),
+        slug_field="name"
+    )
+
+    class Meta:
         model = Vacancy
-        exclude = ["user"]
+        fields = "__all__"
+
+    def is_valid(self, raise_exception=False):
+        self._skills = self.initial_data.pop("skills")
+        return super().is_valid(raise_exception=raise_exception)
+
+    def save(self, **kwargs):
+        vacancy = super().save()
+
+        for skill in self._skills:
+            skill_obj, _ = Skill.objects.get_or_create(name=skill)
+            vacancy.skills.add(skill_obj)
+
+        vacancy.save()
+        return vacancy
+
+
+class VacancyUpdateSerializer(serializers.ModelSerializer):
+    skills = serializers.SlugRelatedField(
+        required=False,
+        many=True,
+        queryset=Skill.objects.all(),
+        slug_field="name"
+    )
+    user = serializers.PrimaryKeyRelatedField(read_only=True)
+    created = serializers.DateField(read_only=True)
+
+    class Meta:
+        model = Vacancy
+        fields = ["id", "text", "slug", "status", "created", "user", "skills"]
+
+    def is_valid(self, raise_exception=False):
+        self._skills = self.initial_data.pop("skills")
+        return super().is_valid(raise_exception=raise_exception)
+
+    def save(self, **kwargs):
+        vacancy = super().save()
+
+        for skill in self._skills:
+            skill_obj, _ = Skill.objects.get_or_create(name=skill)
+            vacancy.skills.add(skill_obj)
+
+        vacancy.save()
+        return vacancy
+
+
+class VacancyDestroySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Vacancy
+        fields = ["id"]
