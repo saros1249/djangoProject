@@ -8,98 +8,48 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
 from rest_framework.generics import ListAPIView, RetrieveAPIView, CreateAPIView, UpdateAPIView, DestroyAPIView
+from rest_framework.viewsets import ModelViewSet
 
 from djangoProject import settings
 from vacancies.models import Vacancy, Skill
 from vacancies.serealizers import VacancyListSerializer, VacancyDetailSerializer, VacancyCreateSerializer, \
-    VacancyUpdateSerializer, VacancyDestroySerializer
+    VacancyUpdateSerializer, VacancyDestroySerializer, SkillSerializer
 
 
-class SkillsListView(ListView):
-    model = Skill
 
-    def get(self, request, *args, **kwargs):
-        super().get(request, *args, **kwargs)
-
-        self.object_list = self.object_list.order_by("name")
-
-        response = []
-        for skill in self.object_list:
-            response.append({
-                "id": skill.id,
-                "name": skill.name
-            })
-
-        return JsonResponse(response, safe=False)
-
-
-class SkillDetailView(DetailView):
-    model = Skill
-
-    def get(self, request, *args, **kwargs):
-        skill = self.get_object()
-
-        return JsonResponse({
-            "id": skill.id,
-            "name": skill.name
-        })
-
-
-@method_decorator(csrf_exempt, name="dispatch")
-class SkillCreateView(CreateView):
-    model = Skill
-    fields = ["name"]
-
-    def post(self, request, *args, **kwargs):
-        data = json.loads(request.body)
-
-        skill = Skill.objects.create(
-            name=data["name"],
-        )
-
-        return JsonResponse({
-            "id": skill.id,
-            "name": skill.name
-        })
-
-
-@method_decorator(csrf_exempt, name="dispatch")
-class SkillUpdateView(UpdateView):
-    model = Skill
-    fields = ["name"]
-
-    def patch(self, request, *args, **kwargs):
-        super().post(request, *args, **kwargs)
-        data = json.loads(request.body)
-
-        self.object.name = data["name"]
-        self.object.save()
-
-        return JsonResponse({
-            "id": self.object.id,
-            "name": self.object.name
-        })
-
-
-@method_decorator(csrf_exempt, name="dispatch")
-class SkillDeleteView(DeleteView):
-    model = Skill
-    success_url = "/"
-
-    def delete(self, request, *args, **kwargs):
-        super().delete(request, *args, **kwargs)
-
-        return JsonResponse({"status": "deleted successfully"}, status=200)
+class SkillViewSet(ModelViewSet):
+    queryset = Skill.objects.all()
+    serializer_class = SkillSerializer
 
 
 class VacanciesListView(ListAPIView):
     queryset = Vacancy.objects.all()
     serializer_class = VacancyListSerializer
 
+    def get(self, request, *args, **kwargs):
+        vacancy_text = request.GET.get("text", None)
+        if vacancy_text:
+            self.queryset = self.queryset.filter(
+                text__icontains=vacancy_text
+            )
+
+        skills = request.GET.getlist("skill", None)
+        skills_q = None
+        for skill in skills:
+
+            self.queryset = self.queryset.filter(
+                skills__name__icontains=skill_name
+            )
+
+
+        return super().get(request, *args, **kwargs)
+
 
 class VacancyDetailView(RetrieveAPIView):
     queryset = Vacancy.objects.all()
     serializer_class = VacancyDetailSerializer
+
+
 
 
 class VacancyCreateView(CreateAPIView):
