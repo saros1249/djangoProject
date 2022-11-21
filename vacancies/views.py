@@ -2,6 +2,7 @@ import json
 
 from django.contrib.auth.models import User
 from django.core.paginator import Paginator
+from django.db.models import Q, F
 from django.http import JsonResponse
 from django.shortcuts import render, get_object_or_404
 from django.utils.decorators import method_decorator
@@ -14,7 +15,6 @@ from djangoProject import settings
 from vacancies.models import Vacancy, Skill
 from vacancies.serealizers import VacancyListSerializer, VacancyDetailSerializer, VacancyCreateSerializer, \
     VacancyUpdateSerializer, VacancyDestroySerializer, SkillSerializer
-
 
 
 class SkillViewSet(ModelViewSet):
@@ -36,11 +36,12 @@ class VacanciesListView(ListAPIView):
         skills = request.GET.getlist("skill", None)
         skills_q = None
         for skill in skills:
-
-            self.queryset = self.queryset.filter(
-                skills__name__icontains=skill_name
-            )
-
+            if skills_q is None:
+                skills_q = Q(skills__name__icontains=skill)
+            else:
+                skills_q |= Q(skills__name__icontains=skill)
+        if skills_q:
+            self.queryset = self.queryset.filter(skills_q)
 
         return super().get(request, *args, **kwargs)
 
@@ -48,8 +49,6 @@ class VacanciesListView(ListAPIView):
 class VacancyDetailView(RetrieveAPIView):
     queryset = Vacancy.objects.all()
     serializer_class = VacancyDetailSerializer
-
-
 
 
 class VacancyCreateView(CreateAPIView):
@@ -65,3 +64,16 @@ class VacancyUpdateView(UpdateAPIView):
 class VacancyDeleteView(DestroyAPIView):
     queryset = Vacancy.objects.all()
     serializer_class = VacancyDestroySerializer
+
+
+class VacancyLikeView(UpdateAPIView):
+    queryset = Vacancy.objects.all()
+    serializer_class = VacancyDetailSerializer
+
+    def put(self, request, *args, **kwargs):
+        Vacancy.objects.filter(pk__in=request.data).update(likes=F('likes') + 1)
+
+        return JsonResponse(VacancyDetailSerializer(
+            Vacancy.objects.filter(pk__in=request.data), many=True).data,
+            safe=False
+            )
