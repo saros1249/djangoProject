@@ -49,8 +49,8 @@ class VacancyCreateSerializer(serializers.ModelSerializer):
         self._skills = self.initial_data.pop("skills")
         return super().is_valid(raise_exception=raise_exception)
 
-    def save(self, **kwargs):
-        vacancy = super().save()
+    def create(self, **validated_data):
+        vacancy = Vacancy.objects.create(**validated_data)
 
         for skill in self._skills:
             skill_obj, _ = Skill.objects.get_or_create(name=skill)
