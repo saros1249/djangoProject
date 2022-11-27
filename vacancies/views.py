@@ -1,18 +1,14 @@
-import json
 
-from django.contrib.auth.models import User
-from django.core.paginator import Paginator
 from django.db.models import Q, F
 from django.http import JsonResponse
-from django.shortcuts import render, get_object_or_404
-from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_exempt
-from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
+
 from rest_framework.generics import ListAPIView, RetrieveAPIView, CreateAPIView, UpdateAPIView, DestroyAPIView
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.viewsets import ModelViewSet
 
-from djangoProject import settings
+
 from vacancies.models import Vacancy, Skill
+from vacancies.permissions import VacancyCreatePermission
 from vacancies.serealizers import VacancyListSerializer, VacancyDetailSerializer, VacancyCreateSerializer, \
     VacancyUpdateSerializer, VacancyDestroySerializer, SkillSerializer
 
@@ -49,21 +45,26 @@ class VacanciesListView(ListAPIView):
 class VacancyDetailView(RetrieveAPIView):
     queryset = Vacancy.objects.all()
     serializer_class = VacancyDetailSerializer
+    permission_classes = [IsAuthenticated]
 
 
 class VacancyCreateView(CreateAPIView):
     queryset = Vacancy.objects.all()
     serializer_class = VacancyCreateSerializer
+    permission_classes = [IsAuthenticated, VacancyCreatePermission]
+
 
 
 class VacancyUpdateView(UpdateAPIView):
     queryset = Vacancy.objects.all()
     serializer_class = VacancyUpdateSerializer
+    permission_classes = [IsAuthenticated, VacancyCreatePermission]
 
 
 class VacancyDeleteView(DestroyAPIView):
     queryset = Vacancy.objects.all()
     serializer_class = VacancyDestroySerializer
+    permission_classes = [IsAuthenticated, VacancyCreatePermission]
 
 
 class VacancyLikeView(UpdateAPIView):

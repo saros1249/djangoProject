@@ -27,6 +27,7 @@ urlpatterns = [
     path('api-auth/', include("rest_framework.urls")),
     path("vacancy/", include('vacancies.urls.vacancies_urls')),
     path("company/", include("companies.urls")),
+    path("user/", include("authentication.urls")),
     ]
 
 urlpatterns += router.urls

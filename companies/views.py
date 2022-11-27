@@ -1,9 +1,7 @@
 import json
 
-from django.contrib.auth.models import User
-from django.core.paginator import Paginator
+
 from django.http import JsonResponse
-from django.shortcuts import render, get_object_or_404
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
