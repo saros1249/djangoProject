@@ -6,9 +6,12 @@ from django.db import models
 
 from authentication.models import User
 
+
 def chec_date_not_past(value: date):
     if value < date.today():
         raise ValidationError(f"{value} не верна.")
+
+
 class Skill(models.Model):
     name = models.CharField(max_length=30)
 
@@ -36,6 +39,7 @@ class Vacancy(models.Model):
     likes = models.IntegerField(default=0)
     min_experience = models.IntegerField(null=True, validators=[MinValueValidator(0)])
     updated_at = models.DateField(null=True, validators=[chec_date_not_past])
+
     class Meta:
         verbose_name = "Вакансия"
         verbose_name_plural = "Вакансии"
