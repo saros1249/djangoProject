@@ -2,20 +2,22 @@ from datetime import date
 
 import pytest
 
+from vacancies.models import Skill
+
 
 @pytest.mark.django_db
 def test_create_vacancy(client, hr_token):
-    expect_response ={
+    expected_response = {
         "id": 1,
-        "created": date.today().strftime("%Y-%m-%d"),
-        "skills": [],
         "slug": "123",
         "text": "123",
         "status": "draft",
-        "min_experience": None,
+        "created": date.today().strftime("%Y-%m-%d"),
+        "user": None,
+        "skills": ["test"],
         "likes": 0,
-        "updated_at": None,
-        "user": None
+        "min_experience": None,
+        "updated_at": None
     }
 
     data = {
@@ -24,12 +26,15 @@ def test_create_vacancy(client, hr_token):
         "status": "draft"
     }
 
+    #Skill.objects.create(name="test")
+
     response = client.post(
         "/vacancy/create/",
         data,
-        content_type="application/json",
-        HTTP_AUTHORIZATION="Token " + hr_token
+        format="json",
+        HTTP_AUTHORIZATION="Token " + hr_token,
+        _mutable=True
     )
 
     assert response.status_code == 201
-    assert response.data == expect_response
+    assert response.data == expected_response

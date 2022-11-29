@@ -44,7 +44,7 @@ class Vacancy(models.Model):
     class Meta:
         verbose_name = "Вакансия"
         verbose_name_plural = "Вакансии"
-        ordering = ["id", "text", "slug", "status", "created", "user"]
+
 
     def __str__(self):
         return self.slug
